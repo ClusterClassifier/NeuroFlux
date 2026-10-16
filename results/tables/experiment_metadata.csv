@@ -1,0 +1,2 @@
+seed,device,trainable_parameters,task_steps,num_tasks,evaluation_episodes_final,batch_size,gamma,target_update_steps,adwin_delta
+42,cuda,88841,10000,7,200,64,0.97,1000,0.002

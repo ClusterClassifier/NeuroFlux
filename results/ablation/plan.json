@@ -1,0 +1,74 @@
+[
+  {
+    "variant": "full_v1",
+    "seed": 42
+  },
+  {
+    "variant": "fixed_ewc",
+    "seed": 42
+  },
+  {
+    "variant": "no_ewc",
+    "seed": 42
+  },
+  {
+    "variant": "no_rollback",
+    "seed": 42
+  },
+  {
+    "variant": "uniform_replay",
+    "seed": 42
+  },
+  {
+    "variant": "no_episodic_replay",
+    "seed": 42
+  },
+  {
+    "variant": "full_v1",
+    "seed": 123
+  },
+  {
+    "variant": "fixed_ewc",
+    "seed": 123
+  },
+  {
+    "variant": "no_ewc",
+    "seed": 123
+  },
+  {
+    "variant": "no_rollback",
+    "seed": 123
+  },
+  {
+    "variant": "uniform_replay",
+    "seed": 123
+  },
+  {
+    "variant": "no_episodic_replay",
+    "seed": 123
+  },
+  {
+    "variant": "full_v1",
+    "seed": 2026
+  },
+  {
+    "variant": "fixed_ewc",
+    "seed": 2026
+  },
+  {
+    "variant": "no_ewc",
+    "seed": 2026
+  },
+  {
+    "variant": "no_rollback",
+    "seed": 2026
+  },
+  {
+    "variant": "uniform_replay",
+    "seed": 2026
+  },
+  {
+    "variant": "no_episodic_replay",
+    "seed": 2026
+  }
+]

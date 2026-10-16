@@ -1,0 +1,8 @@
+metric,definition,publication_note
+throughput,successful transmissions / all environment steps,normalized per-step rate
+collision_rate,collisions / transmission attempts,also PU interference rate in this single-SU simulator
+normalized_access_efficiency,successful transmissions / transmission attempts,dimensionless proxy; NOT physical bit/s/Hz spectral efficiency
+channel_entropy_nats,Shannon entropy of channel-action distribution,nats
+normalized_channel_entropy,entropy / ln(number of channels),0..1
+ACC_final,mean final-row reward across all tasks,continual-learning final performance
+BWT,mean(final reward - reward after own-task learning),negative indicates forgetting

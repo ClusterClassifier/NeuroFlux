@@ -1,0 +1,24 @@
+{
+  "seeds": [
+    42,
+    123,
+    2026
+  ],
+  "cases": [
+    "adaptive_ewc",
+    "rollback",
+    "episodic_replay"
+  ],
+  "task_steps": 10000,
+  "batch_size": 64,
+  "gamma": 0.97,
+  "target_update_steps": 1000,
+  "rollback_interval": 100,
+  "after_task_episodes": 100,
+  "pre_task_episodes": 50,
+  "final_episodes": 200,
+  "device": "auto",
+  "source_sha256": "71db701c7a31c84dffa794be0aba056db230464014757b928bd734427d3d12b5",
+  "variant": "full_v1",
+  "seed": 42
+}

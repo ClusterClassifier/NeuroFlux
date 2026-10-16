@@ -1,0 +1,10 @@
+{
+  "ACC_final": "Mean final row of the original task matrix; after-task evaluation budget.",
+  "final_policy_eval_reward": "Mean of the separate original final-policy evaluation across tasks.",
+  "BWT": "Original final-row minus diagonal mean over prior tasks.",
+  "mean_collision_rate": "Unweighted task mean; collision / transmission attempts.",
+  "confidence_intervals": "Unadjusted Student-t intervals across independent training seeds; three seeds are exploratory.",
+  "paired_comparisons": "Full V1 minus each ablation, on shared completed seeds; no significance claim is generated.",
+  "adaptation": "Original frozen-policy threshold diagnostic remains in original reports; not aggregated as learning recovery time.",
+  "execution": "Original asynchronous MEC thread and original evaluation RNG behavior are retained."
+}
