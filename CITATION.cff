@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite this repository."
+type: software
+title: "Neuroflux: Continual Deep Q-Learning for Sequential Channel Access in a Synthetic Cognitive-Radio Network"
+authors:
+  - family-names: "Sharma"
+    given-names: "Manu"
+abstract: >-
+  Research code for sequential channel access in a synthetic cognitive-radio
+  environment using a DQN, replay, elastic weight consolidation, TD-error
+  change monitoring, and alarm-triggered rollback.
+keywords:
+  - cognitive radio
+  - dynamic spectrum access
+  - continual reinforcement learning
+  - deep Q-network

@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neurone-crn"
+version = "0.2.0"
+description = "Neuroflux: continual DQN for sequential channel access in a synthetic cognitive-radio environment"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "YOUR_FULL_NAME" }]
+dependencies = [
+  "numpy",
+  "pandas",
+  "torch>=2.0",
+  "scipy>=1.13",
+  "PyYAML>=6.0",
+  "matplotlib",
+  "seaborn",
+  "IPython",
+]
+
+[project.scripts]
+neurone = "neurone.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

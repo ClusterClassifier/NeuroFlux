@@ -1,166 +1,113 @@
-# Continual Reinforcement Learning for Non-Stationary Cognitive Radio Networks 📡
+# NeuroFlux
 
-A Continual Reinforcement Learning (CRL) framework for adaptive spectrum access in non-stationary Cognitive Radio Networks (CRNs). The project models changing Primary User (PU) activity across a full diurnal cycle and trains a Secondary User (SU) to adapt its channel-selection policy while reducing catastrophic forgetting.
+**Continual deep Q-learning for sequential channel access in a synthetic cognitive-radio network.**
 
-## 📖 Overview
+NeuroFlux studies how a single secondary user can learn channel-access decisions across changing primary-user occupancy regimes while retaining useful behavior from earlier regimes. The implemented system combines a deep Q-network (DQN), active and episodic replay, elastic weight consolidation (EWC), temporal-difference (TD) error change monitoring, and alarm-triggered policy rollback. It is a research prototype evaluated in a controlled simulator.
 
-Spectrum occupancy in a CRN can change significantly throughout the day. A policy trained for one traffic regime may therefore perform poorly when PU activity changes, while sequential retraining can overwrite knowledge acquired from earlier environments.
+## At a glance
 
-This project addresses that problem using a **Deep Q-Network (DQN)** combined with continual-learning and drift-adaptation mechanisms:
+| Item               | Implementation                                                              |
+| ------------------ | --------------------------------------------------------------------------- |
+| Environment        | One secondary user, eight synthetic channels, one idle action               |
+| Observation        | Five recent SNR and occupancy values per channel; 80 inputs                 |
+| Policy             | Feed-forward target-network DQN; 80 → 256 → 256 → 9                         |
+| Continual learning | Persistent episodic replay and variance-adaptive EWC                        |
+| Change response    | Custom ADWIN-style monitor on batch TD error; optional snapshot restoration |
+| Core study         | Seven sequential occupancy regimes, T1–T7                                   |
+| Main outcomes      | Final reward, backward transfer, forgetting, collision rate                 |
 
-1. **ADWIN Concept Drift Detection** — monitors the mean absolute Temporal Difference (TD) error and detects statistically significant changes in the learning stream.
+The regime names describe illustrative synthetic conditions. Occupancy is sampled from task-specific Bernoulli probabilities, with one relatively favorable channel per task. The agent receives recent occupancy history directly; this version does not simulate sensing errors, competing secondary users, or physical-layer bit rates.
 
-2. **Adaptive Elastic Weight Consolidation (EWC)** — protects parameters important to previously learned policies using a Fisher Information Matrix (FIM). The EWC coefficient \(\lambda_t\) adapts according to recent TD-error variance to balance stability and plasticity.
+## How it works
 
-3. **Episodic Memory Replay** — preserves high-information transitions selected using absolute TD error and mixes them with the active replay buffer during later training.
+At each step, NeuroFlux observes recent channel conditions, samples a channel or idle action during training, receives a reward, and updates its DQN from replay. A clear-channel transmission earns `+1`, a collision earns `−1`, and idling earns `−0.05`. Evaluations use greedy actions.
 
-4. **Rollback-Based Recovery** — maintains lightweight policy checkpoints that can be restored when concept drift is detected.
+The active replay buffer stores recent transitions. An episodic buffer retains selected high-absolute-TD-error transitions for later tasks. EWC penalizes changes to parameters estimated to matter to previous tasks; its global coefficient varies with recent TD-error variance. The detector monitors mean absolute batch TD error and may trigger restoration of a recent policy snapshot plus memory, importance-estimation, and exploration resets. Importance estimation runs in a local background worker; it is not a deployed edge-computing service.
 
-5. **Asynchronous MEC Simulation** — offloads Fisher Information Matrix computation to a non-blocking worker thread, allowing the main spectrum-learning loop to continue while consolidation data is computed.
+The [system overview](docs/system_overview.md), [methods](docs/methods.md), and [metric definitions](docs/metric_definitions.md) give the compact technical specification.
 
-## 🧠 CRN Environment
+## Install
 
-The simulator contains **8 spectrum channels** and an additional idle action. Each observation contains recent channel occupancy and normalized signal information across a five-step history.
+Use Python 3.10 or newer. From the repository root (the directory containing `pyproject.toml`, `src/`, and `configs/`):
 
-Seven sequential environments represent different PU traffic regimes:
-
-| Task | Period              | PU Activity |
-| ---- | ------------------- | ----------- |
-| T1   | Early commute       | Low–Medium  |
-| T2   | Peak commute        | High        |
-| T3   | Midday traffic      | Medium      |
-| T4   | Sparse IoT activity | Low         |
-| T5   | Evening commute     | High        |
-| T6   | Heavy streaming     | Very High   |
-| T7   | Night activity      | Very Low    |
-
-Each task is trained for **10,000 environment steps**, creating a 70,000-step non-stationary learning sequence.
-
-## 📊 Evaluation
-
-The notebook includes a complete evaluation pipeline for both spectrum-access performance and continual learning.
-
-Reported metrics include:
-
-* Final average performance and diagonal task performance
-* Backward Transfer (BWT)
-* Forward Transfer (FWT) against a random-policy reference
-* Absolute and normalized forgetting
-* Mean episode reward with standard deviation and 95% confidence intervals
-* Collision / PU interference rate
-* Successful transmission rate
-* Throughput in successful transmissions per environment step
-* Normalized access efficiency
-* Channel utilization and idle rate
-* Normalized channel-selection entropy
-* Adaptation speed
-* ADWIN detection statistics and detection delay
-* DQN, EWC, and total training loss
-* Adaptive EWC coefficient trajectory
-* TD-error evolution
-
-The final policy and the **Random** and **Greedy/Myopic** baselines are evaluated over **200 episodes per task**.
-
-The notebook also includes IEEE-standard charts and comparison outputs for research-oriented reporting.
-
-## 🧪 Ablation Study
-
-A built-in ablation pipeline isolates the contribution of the major components using the same task sequence and training budget:
-
-* Vanilla DQN
-* DQN + Fixed EWC
-* DQN + Adaptive EWC
-* DQN + ADWIN
-* DQN + Adaptive EWC + ADWIN
-* **Full Model: Adaptive EWC + ADWIN + Episodic Replay**
-
-The experiment is configured for **five independent training seeds**:
-
-```python
-[42, 123, 2024, 31415, 27182]
+```bash
+python -m venv .venv
+python -m pip install -e .
 ```
 
-Results are aggregated across independent runs using mean, standard deviation, and 95% confidence intervals.
+Activate the virtual environment before installing or running the project. The editable install exposes the existing `neurone` command from `src/neurone/`; **NeuroFlux** is the system and publication name. The entry point also works as `python -m neurone` after installation. PyTorch installation may require a platform-specific wheel for the desired CPU or CUDA environment.
 
-## 📈 Generated Outputs
+## Run a smoke check
 
-Training and evaluation generate:
+The small preset checks that the pipeline works; its outputs are development artifacts, not research results.
+
+```bash
+python scripts/run_smoke.py --config configs/experiments/smoke.yaml --output results/smoke --hours 0.1
+```
+
+Run the existing unit checks separately when changing implementation or metrics:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+## Run experiments
+
+The package's `final.yaml` preset launches a **separate comparison matrix** of `vanilla_dqn`, `dqn_ewc`, `dqn_adwin`, and `neurone_full` over its configured seeds. It is not the four-condition archived table below. The preset uses 10,000 interactions per task, but its evaluation counts are **10 pre-task, 10 after-task, and 30 final-policy episodes**, unlike the archived study.
+
+```bash
+python run_all.py --config configs/experiments/final.yaml --output results/final --hours 10
+```
+
+The component-ablation suite has its own protocol and configuration. Its full preset uses five configured seeds and includes additional component controls; it must be analyzed independently of the archived results.
+
+```bash
+python scripts/run_ablation_suite.py --config configs/experiments/ablation_overnight.yaml --output results/ablation --hours 9.5
+```
+
+Use a **new output directory when changing source or configuration**. Existing completed jobs may be skipped when rerunning an identical matrix; a saved inspection checkpoint does not imply exact continuation of an interrupted training job. Run budgets are caps, not guarantees that every job will finish. See [experiment protocol](docs/experiment_protocol.md) and [reproduction](docs/reproduction.md) before using outputs in a manuscript.
+
+## Archived matched study
+
+The reported study used the original notebook-backed ablation runner, **not** the `final.yaml` matrix above. It trained seven tasks for 10,000 interactions each and formed its continual-learning reward matrix from 100 after-task evaluation episodes per task. The reported component comparisons share training seeds `42`, `123`, and `2026`. Reward and backward transfer (BWT) are reward points per 1,000-step evaluation episode; values are mean ± sample standard deviation across training seeds.
+
+| Condition      | Final average reward | BWT             | Mean forgetting | Collision rate |
+| -------------- | --------------------:| ---------------:| ---------------:| --------------:|
+| Full NeuroFlux | 913.76 ± 4.28        | −25.22 ± 22.10  | 2.47 ± 2.99%    | 2.15 ± 1.67%   |
+| Fixed EWC      | 927.26 ± 10.78       | −18.85 ± 15.35  | 2.22 ± 1.87%    | 2.94 ± 1.14%   |
+| No EWC         | 708.77 ± 2.13        | −245.98 ± 11.54 | 29.19 ± 1.51%   | 12.29 ± 0.37%  |
+| No rollback    | 915.41 ± 14.65       | −26.63 ± 19.21  | 2.94 ± 2.11%    | 1.65 ± 1.24%   |
+
+Relative to the full configuration, removing EWC lowered final reward by **204.99 points** on average across matched seeds, alongside more forgetting and collisions. The fixed-EWC and no-rollback contrasts do not establish a general advantage for adaptive coefficient scheduling or rollback. These are within-simulator component comparisons, not scores on a shared benchmark with external published methods. See [results status](docs/results_status.md) for the concise interpretation.
+
+The archived run package contains the exact per-run worker source, configuration, logs, status, checkpoints, and metric reports. Its top-level configuration identifies source SHA-256 `71db701c7a31c84dffa794be0aba056db230464014757b928bd734427d3d12b5`. A repository revision should be linked to that source snapshot before claiming a fresh package run reproduces the table. Large checkpoints and logs belong in a versioned release or data archive rather than ordinary Git history.
+
+## Repository map
 
 ```text
-checkpoints/
-├── metrics.csv
-├── training_log.csv
-├── baseline_comparison.csv
-├── experiment_metadata.csv
-├── metric_definitions.csv
-├── ieee_full_metric_report.csv
-└── ablations/
-    ├── ablation_all_seeds.csv
-    ├── ablation_per_task.csv
-    ├── ablation_summary.csv
-    ├── ablation_effect_vs_full.csv
-    └── fig_ablation_acc.pdf
+.
+├── README.md                 Project entry point
+├── CITATION.cff              Citation metadata
+├── pyproject.toml            Python package metadata
+├── configs/                  Task and experiment presets
+├── docs/                     Methods, metrics, protocol, results, paper plan
+├── legacy_original/          Preserved source snapshot
+├── scripts/                  Smoke, run, ablation, aggregation, figure helpers
+├── src/neurone/              Maintained Python package
+├── tests/                    Fast implementation checks
+└── run_all.py                Matrix runner
 ```
 
-Additional PDF figures include the continual-learning evaluation matrix, retention trace, normalized forgetting, throughput/access efficiency, PU interference, baseline comparisons, loss decomposition, adaptive EWC coefficient, and TD-error trajectory.
+Generated `results/` directories are created by runs and should be handled according to the archive and Git ignore policy. The [paper blueprint](docs/paper_blueprint.md) outlines an IEEE-style manuscript; an editable manuscript draft is maintained separately.
 
-## 🗂️ Repository Structure
+## Scope and interpretation
 
-* **Training** — sequential CRN training, drift response, EWC updates, episodic replay, rollback, and MEC coordination.
-* **Evaluation** — continual-learning and spectrum-access evaluation metrics.
-* **Agents** — DQN architecture and Boltzmann exploration policy.
-* **Environment** — 8-channel CRN simulator and seven diurnal PU-traffic regimes.
-* **EWC** — adaptive Elastic Weight Consolidation and Fisher-based parameter protection.
-* **Change-Point Detection** — ADWIN implementation operating on the TD-error stream.
-* **Replay** — active experience replay and Top-K episodic memory.
-* **MEC Server** — asynchronous Fisher Information Matrix computation.
-* **Notebook** — end-to-end training, evaluation, chart generation, validation, and ablation experiments.
-* **app.py** — interactive Streamlit simulation of the trained CRN agent.
+- The detector responds to a learning-error statistic; it does not classify the type of traffic change.
+- EWC importance uses squared Q-value gradients as a diagonal proxy, not a validated likelihood Fisher matrix.
+- The reported throughput quantity counts successful transmissions per environment step; it is not bits per second or spectral efficiency.
+- The simulator uses independent synthetic occupancy with supplied recent occupancy history. Real-radio, noisy-sensing, multi-user, and packet-level performance remain untested here.
+- Evaluation episodes do not replace independent training seeds when describing uncertainty.
 
-## 🚀 Installation
+## Citation and license
 
-```bash
-git clone https://github.com/ClusterClassifier/nonstationary-continual-crn-rl.git
-cd nonstationary-continual-crn-rl
-pip install -r requirements.txt
-```
-
-CUDA is automatically used by PyTorch when an available compatible GPU is detected; otherwise the framework runs on CPU.
-
-## ▶️ Running the Project
-
-### Training
-
-```bash
-python train.py
-```
-
-This executes sequential training across all seven CRN environments and generates the model checkpoints and evaluation data.
-
-### Generate Charts
-
-```bash
-python export_charts.py
-```
-
-### Interactive Simulation
-
-A deployed version of the real-time simulation is available here:
-
-**[Launch the CRN RL Streamlit Simulation](https://nonstationary-continual-crn-rl-app.streamlit.app/)**
-
-Or run it locally:
-
-```bash
-streamlit run app.py
-```
-
-The dashboard visualizes the 8-channel spectrum, PU activity, SU decisions, task changes, and live performance statistics.
-
-## 🔬 Reproducibility
-
-The framework records experiment configuration and supports deterministic random seeds. Evaluation uncertainty is kept separate from variability across independently trained models, while the ablation pipeline performs dedicated multi-seed training for statistically meaningful comparisons.
-
-## License
-
-Distributed under the **CC-BY-ND License**. See `LICENSE` for more information.
+Use [CITATION.cff](CITATION.cff) when citing the software. **Replace its author placeholders** and add the repository release/DOI after those exist. The [package metadata](pyproject.toml) also contains an author placeholder. Select a license and add a `LICENSE` file before a public release; no reuse license has been assumed here.
