@@ -98,8 +98,6 @@ The archived run package contains the exact per-run worker source, configuration
 └── run_all.py                Matrix runner
 ```
 
-Generated `results/` directories are created by runs and should be handled according to the archive and Git ignore policy. The [paper blueprint](docs/paper_blueprint.md) outlines an IEEE-style manuscript; an editable manuscript draft is maintained separately.
-
 ## Scope and interpretation
 
 - The detector responds to a learning-error statistic; it does not classify the type of traffic change.
